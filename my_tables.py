@@ -2,6 +2,9 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaD
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
+
+
+
 Base = declarative_base()
 metadata = Base.metadata
 
@@ -15,8 +18,10 @@ class Order(Base):
 
 class Customer(Base):
     __tablename__ = 'customers'
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True) 
     name = Column(String)
     location = Column(String)
     email = Column(String)
     orders = relationship('Order', back_populates='customer')
+
+

@@ -1,108 +1,224 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from my_tables import Base, Order, Customer  
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from validate_email_address import validate_email
+
+
+Base = declarative_base()
+
+class Customer(Base):
+    __tablename__ = 'customers'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    orders = relationship('Order', back_populates='customer')
+
+
+class Order(Base):
+    __tablename__ = 'orders'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    item_name = Column(String, nullable=False)
+    item_quantity = Column(Integer, nullable=False)
+    customer_id = Column(Integer, ForeignKey('customers.id'))
+    customer = relationship('Customer', back_populates='orders')
+
+
 engine = create_engine('sqlite:///decor_orders.db')
-Base.metadata.create_all(engine)
+Base.metadata.drop_all(engine)  # Drop existing tables
+Base.metadata.create_all(engine)  # Recreate tables with updated schema
+
 
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def place_order():
-    items = ('Mirror','Chairs','Lamps','Vase')
-    user_name = input("Hello, welcome to CustomDecor, kindly enter your name to proceed: ")
-    client_order = input(f"Hello {user_name}.These: {items} are the items we make. Kindly press 1 to record your order. ")
+items = ('Mirror', 'Chairs', 'Lamps', 'Vase')
+
+
+def is_valid_email(email):
+    try:
+        validate_email(email)
+        return True
+    except ValueError:
+        return False
+
+
+def register_user():
+    user_name = input("Hello, welcome to CustomDecor, kindly enter your name to proceed: \n")
+    print('')
+    customer_email = input('Kindly enter your email: \n')
+    print('')
+
+    if not is_valid_email(customer_email):
+        print("Invalid email address. Please enter a valid email. \n")
+        print('')
+        return
+
+    customer = Customer(name=user_name, email=customer_email)
+    session.add(customer)
+    session.commit()
+
+    print(f"Registration successful! Your customer ID is: {customer.id}\n")
+
+
+def place_order(customer_id):
+    user = session.query(Customer).filter_by(id=customer_id).first()
     
-    if client_order:
+    if not user:
+        print(f"Customer not found with ID: {customer_id}\n")
+        return
 
-        item_name = input('Which item would you like? ')
-        item_quantity = int(input('How many pieces would you like? '))
+    print('')
+    client_order = input(f"Hello {user.name}. These: {items} are the items we make. Kindly press 1 to record your order. \n")
+    print('')
+    
+    if client_order != '1':
+        print("Invalid input for order. Please press 1 to record your order.\n")
+        print('')
+        return
 
-        customer_name = input('Kindly confirm the name you entered: ')
-        customer_location = input('Kindly enter your location: ')
-        customer_email = input('Kindly enter your email: ')
+    item_name = input('Which item would you like? \n').lower()
+    print('')
 
-    customer = session.query(Customer).filter_by(name=customer_name, location=customer_location, email=customer_email).first()
-    if not customer:
-        customer = Customer( name=customer_name, location=customer_location, email=customer_email)
-        session.add(customer)
-        session.commit()
+    if item_name not in map(str.lower, items):
+        print(f"Invalid item name. Please choose one of: {', '.join(items)} \n")
+        print('')
+        return
 
-    order = Order(item_name=item_name, item_quantity=item_quantity, customer=customer)
+    try:
+        item_quantity = int(input('How many pieces would you like? \n'))
+        print('')
+    except ValueError:
+        print('Invalid input for quantity. Please enter a valid integer. \n')
+        print('')
+        return
+    
+    order = Order(item_name=item_name, item_quantity=item_quantity, customer=user)
     session.add(order)
     session.commit()
 
-def view_orders():
-    orders = session.query(Order).all()
-    for order in orders:
-        if order.customer:
-            print(f"Order ID: {order.id}, Item: {order.item_name}, Quantity: {order.item_quantity}, Customer Name: {order.customer.name}")
-        else:
-            print(f"Order ID: {order.id}, Item: {order.item_name}, Quantity: {order.item_quantity}, Customer: None")
-def change_order():
-    view_orders()
-    order_id = int(input('Kindly enter the ID of the order you want to change: '))
-    order = session.query(Order).get(order_id)
+    print('Your order has been placed successfully. \n')
+
+
+def view_orders(customer_id):
+    user = session.query(Customer).filter_by(id=customer_id).first()
+    
+    if not user:
+        print(f"Customer not found with ID: {customer_id}\n")
+        return
+
+    orders = session.query(Order).filter_by(customer=user).all()
+
+    if orders:
+        for order in orders:
+            print(f"Order ID: {order.id}, Item: {order.item_name}, Quantity: {order.item_quantity}\n")
+    else:
+        print(f"No orders found for customer with ID: {customer_id}\n")
+
+
+def change_order(customer_id):
+    user = session.query(Customer).filter_by(id=customer_id).first()
+    
+    if not user:
+        print(f"Customer not found with ID: {customer_id}\n")
+        return
+
+    view_orders(customer_id)
+    order_id = int(input('Kindly enter the ID of the order you want to change: \n'))
+    print('')
+    order = session.query(Order).filter_by(id=order_id, customer=user).first()
 
     if order:
-        new_item_name = input('Enter the new item name: ')
-        new_item_quantity = int(input('Enter the new quantity: '))
+        new_item_name = input('Enter the new item name: \n')
+        print('')
+
+        if new_item_name.capitalize() not in items:
+            print(f"Invalid item name. Please choose one of: {', '.join(items)} \n")
+            print('')
+            return
+
+        try:
+            new_item_quantity = int(input('Enter the new quantity: \n'))
+            print('')
+        except ValueError:
+            print('Invalid input for quantity. Please enter a valid integer. \n')
+            print('')
+            return
         order.item_name = new_item_name
         order.item_quantity = new_item_quantity
         session.commit()
-        print('Your order has been changed successfully.')
+        print('Your order has been changed successfully. \n')
     else:
-        print('Order not found.')
+        print('Order not found. \n')
 
-def delete_order():
-    view_orders()
-    order_id = int(input('Kindly enter the ID of the order you want to delete: '))
-    order = session.get(Order, order_id)
+
+def delete_order(customer_id):
+    user = session.query(Customer).filter_by(id=customer_id).first()
+    
+    if not user:
+        print(f"Customer not found with ID: {customer_id}\n")
+        return
+
+    view_orders(customer_id)
+    order_id = int(input('Kindly enter the ID of the order you want to delete: \n'))
+    print('')
+    order = session.query(Order).filter_by(id=order_id, customer=user).first()
     if order:
         session.delete(order)
         session.commit()
-        print('Your order has been deleted successfully.')
+        print('Your order has been deleted successfully. \n')
     else:
-        print('Order not found.')
+        print('Order not found. \n')
 
-def delete_customer():
-    customer_name = input('Enter the name of the customer you want to delete: ')
+
+def delete_customer(customer_id):
+    user = session.query(Customer).filter_by(id=customer_id).first()
     
-    customer = session.query(Customer).filter_by(name=customer_name).first()
-    
-    if customer:
-        session.delete(customer)
-        session.commit()
-        print(f'Customer {customer_name} has been deleted successfully.')
-    else:
-        print(f'Customer {customer_name} not found.')
+    if not user:
+        print(f"Customer not found with ID: {customer_id}\n")
+        return
+
+    session.delete(user)
+    session.commit()
+    print(f'Customer with ID {customer_id} has been deleted successfully. \n')
+
 
 def main():
     while True:
-        print(' CustomDecor Order(s) Manager ')
-        print('1) Choose 1 to place an order')
-        print('2) Choose 2 to view orders')
-        print('3) Choose 3 to change an order')
-        print('4) Choose 4 to delete an order')
-        print('5) Choose 5 to delete customer data')
-        print('6) Choose 6 to quit')
+        print(' Welcome to CustomDecor Order(s) Manager \n')
+        print('Press (r) to register, kindly note that registration is required to proceed ')
+        print('Then press (p) to place an order')
+        print('')
+        print('To view your order, press (v)')
+        print('To change your order, press (c)')
+        print('To delete your order, press (dl)')
+        print('To delete your account, press (da)')
+        print('To quit, press (q) \n')
 
-        option = input('Choose an option: ')
+        client_choice = input('Please proceed by entering your selection from the choices above: \n ')
+        print('')
 
-        if option == '1':
-            place_order()
-        elif option == '2':
-            view_orders()
-        elif option == '3':
-            change_order()
-        elif option == '4':
-            delete_order()
-        elif option == '5':
-            delete_customer()
-        elif option == '6':
-            print('Order cancelled')
+        if client_choice == 'r':
+            register_user()
+        elif client_choice == 'p':
+            customer_id = int(input('Enter your customer ID: '))
+            place_order(customer_id)
+        elif client_choice == 'v':
+            customer_id = int(input('Enter your customer ID: '))
+            view_orders(customer_id)
+        elif client_choice == 'c':
+            customer_id = int(input('Enter your customer ID: '))
+            change_order(customer_id)
+        elif client_choice == 'dl':
+            customer_id = int(input('Enter your customer ID: '))
+            delete_order(customer_id)
+        elif client_choice == 'da':
+            customer_id = int(input('Enter your customer ID: '))
+            delete_customer(customer_id)
+        elif client_choice == 'q':
+            print('Order cancelled \n')
             break
         else:
-            print('Invalid option. Please choose a valid option.')
+            print('Your choice is invalid. Kindly choose a valid choice. \n')
+
 
 if __name__ == "__main__":
     main()
