@@ -86,7 +86,7 @@ def place_order(customer_id):
     try:
         item_quantity = int(input('How many pieces would you like? \n'))
         print('')
-    
+    except ValueError:
         print('Invalid input for quantity. Please enter a valid integer. \n')
         print('')
         return
