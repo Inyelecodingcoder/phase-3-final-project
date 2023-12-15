@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, MetaData
+from sqlalchemy import  Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 
 Base = declarative_base()
-metadata = Base.metadata
+
 
 class Order(Base):
     __tablename__ = 'orders'
