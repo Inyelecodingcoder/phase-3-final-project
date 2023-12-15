@@ -98,7 +98,7 @@ def place_order(customer_id):
     print('Your order has been placed successfully. \n')
 
 
-def view_orders(customer_id):
+
     user = session.query(Customer).filter_by(id=customer_id).first()
     
     if not user:
