@@ -95,7 +95,7 @@ def place_order(customer_id):
     session.add(order)
     session.commit()
 
-    
+    print('Your order has been placed successfully. \n')
 
 
 def view_orders(customer_id):
