@@ -1,30 +1,14 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy import create_engine
+from sqlalchemy.orm import  sessionmaker
 from validate_email_address import validate_email
+from my_tables import Base, Customer, Order
 
 
-Base = declarative_base()
 
-class Customer(Base):
-    __tablename__ = 'customers'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    email = Column(String, nullable=False, unique=True)
-    orders = relationship('Order', back_populates='customer')
-
-
-class Order(Base):
-    __tablename__ = 'orders'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    item_name = Column(String, nullable=False)
-    item_quantity = Column(Integer, nullable=False)
-    customer_id = Column(Integer, ForeignKey('customers.id'))
-    customer = relationship('Customer', back_populates='orders')
 
 
 engine = create_engine('sqlite:///decor_orders.db')
-Base.metadata.drop_all(engine)  # Drop existing tables
-Base.metadata.create_all(engine)  # Recreate tables with updated schema
+Base.metadata.create_all(engine)  
 
 
 Session = sessionmaker(bind=engine)
