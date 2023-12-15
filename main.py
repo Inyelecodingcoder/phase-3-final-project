@@ -105,7 +105,7 @@ def view_orders(customer_id):
         print(f"Customer not found with ID: {customer_id}\n")
         return
 
-    orders = session.query(Order).filter_by(customer=user).all()
+    
 
     if orders:
         for order in orders:
