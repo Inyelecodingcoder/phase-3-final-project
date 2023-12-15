@@ -11,7 +11,7 @@ Base = declarative_base()
 class Order(Base):
     __tablename__ = 'orders'
     id = Column(Integer, primary_key=True)
-    
+    item_name = Column(String)
     item_quantity = Column(Integer)
     customer_id = Column(Integer, ForeignKey('customers.id'))
     customer = relationship('Customer', back_populates='orders')
