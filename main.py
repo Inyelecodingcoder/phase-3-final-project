@@ -76,7 +76,7 @@ def place_order(customer_id):
         return
 
     item_name = input('Which item would you like? \n').lower()
-    
+    print('')
 
     if item_name not in map(str.lower, items):
         print(f"Invalid item name. Please choose one of: {', '.join(items)} \n")
