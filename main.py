@@ -92,7 +92,7 @@ def place_order(customer_id):
         return
     
     order = Order(item_name=item_name, item_quantity=item_quantity, customer=user)
-    session.add(order)
+    
     session.commit()
 
     print('Your order has been placed successfully. \n')
