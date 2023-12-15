@@ -99,7 +99,7 @@ def place_order(customer_id):
 
 
 def view_orders(customer_id):
-    
+    user = session.query(Customer).filter_by(id=customer_id).first()
     
     if not user:
         print(f"Customer not found with ID: {customer_id}\n")
